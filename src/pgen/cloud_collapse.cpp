@@ -35,7 +35,11 @@
 #error "This problem generator requires Multigrid gravity solver."
 #endif
 
+// In the unit system where [L] = L_J, [M] = M_J, [T] = t_ff,
+// the gravitational constant becomes G = 3*PI/32.
+const Real gconst = 3.*PI/32.;
 
+int CheckLPThreshold(MeshBlock *pmb);
 int JeansCondition(MeshBlock *pmb);
 Real njeans;
 
@@ -51,9 +55,7 @@ void Mesh::InitUserMeshData(ParameterInput *pin) {
     return;
   }
 
-  // In the unit system where [L] = L_J, [M] = M_J, [T] = t_ff,
-  // the gravitational constant becomes G = 3*PI/32.
-  SetFourPiG(4.*PI*(3.*PI/32.));
+  SetFourPiG(4.*PI*gconst);
 
   // turb_flag is initialzed in the Mesh constructor to 0 by default;
   // turb_flag = 1 for decaying turbulence
@@ -96,11 +98,49 @@ void MeshBlock::ProblemGenerator(ParameterInput *pin) {
 }
 
 //========================================================================================
+//! \fn void Mesh::UserWorkInLoop()
+//! \brief Function called once every time step for user-defined work.
+//========================================================================================
+
+void Mesh::UserWorkInLoop() {
+  int nthreads = GetNumMeshThreads();
+
+  // loop through all MeshBlocks and check Larson-Penston critical density is reached
+#pragma omp parallel for num_threads(nthreads) schedule(dynamic,1)
+  for (int l=0; l<nblocal; ++l) {
+    if (CheckLPThreshold(my_blocks(l))) {
+      std::raise(SIGTERM);
+      break;
+    }
+  }
+  return;
+}
+
+int CheckLPThreshold(MeshBlock* pmb) {
+  Real dx = pmb->pcoord->dx1f(0); // assuming uniform cubic cells
+  Real cs = pmb->peos->GetIsoSoundSpeed();
+  // Larson-Penston threshold (Eqn. (7) of Kim & Ostriker 2017, ApJ, 846)
+  Real rhoLP = 8.86/PI*SQR(cs)/gconst/SQR(dx);
+  for (int k = pmb->ks; k<=pmb->ke; ++k) {
+    for (int j = pmb->js; j<=pmb->je; ++j) {
+      for (int i = pmb->is; i<=pmb->ie; ++i) {
+        if (pmb->phydro->w(IDN,k,j,i) > rhoLP) {
+          return 1;
+        }
+      }
+    }
+  }
+  return 0;
+}
+
+
+//========================================================================================
 //! \fn void Mesh::UserWorkAfterLoop(ParameterInput *pin)
 //  \brief
 //========================================================================================
 
 void Mesh::UserWorkAfterLoop(ParameterInput *pin) {
+  // do nothing
 }
 
 // Jeans Condition
