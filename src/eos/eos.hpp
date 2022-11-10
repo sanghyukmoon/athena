@@ -14,6 +14,7 @@
 
 // C++ headers
 #include <limits>     // std::numeric_limits<float>
+#include <string>     // std::string
 
 // Athena++ headers
 #include "../athena.hpp"         // Real
@@ -84,6 +85,9 @@ class EquationOfState {
   void ApplyPrimitiveConservedFloors(
       AthenaArray<Real> &prim, AthenaArray<Real> &cons, AthenaArray<Real> &bcc,
       int k, int j, int i);
+  // TODO(SM) simd length?
+  int CorrectBadCells(AthenaArray<Real> &cons, int k, int j, int i,
+      int il, int iu, int jl, int ju, int kl, int ku, std::string method);
 #if !MAGNETIC_FIELDS_ENABLED  // Newtonian hydro: Newtonian MHD defined as no-op
   Real FastMagnetosonicSpeed(const Real[], const Real) {return 0.0;}
 #else  // Newtonian MHD
@@ -162,7 +166,8 @@ class EquationOfState {
   Real iso_sound_speed_, gamma_;         // isothermal Cs, ratio of specific heats
   Real density_floor_, pressure_floor_;  // density and pressure floors
   Real energy_floor_;                    // energy floor
-  Real scalar_floor_; // dimensionless concentration floor
+  Real scalar_floor_;                    // dimensionless concentration floor
+  std::string floor_method_;              // flooring method
   Real sigma_max_, beta_min_;            // limits on ratios of gas quantities to pmag
   Real gamma_max_;                       // maximum Lorentz factor
   Real rho_min_, rho_pow_;               // variables to control power-law denity floor

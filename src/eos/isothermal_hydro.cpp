@@ -10,6 +10,7 @@
 
 // C++ headers
 #include <cmath>   // sqrt()
+#include <string>     // std::string
 
 // Athena++ headers
 #include "../athena.hpp"
@@ -26,7 +27,8 @@ EquationOfState::EquationOfState(MeshBlock *pmb, ParameterInput *pin) :
     pmy_block_(pmb),
     iso_sound_speed_{pin->GetReal("hydro", "iso_sound_speed")},  // error if missing!
     density_floor_{pin->GetOrAddReal("hydro", "dfloor", std::sqrt(1024*float_min) )},
-    scalar_floor_{pin->GetOrAddReal("hydro", "sfloor", std::sqrt(1024*float_min))} {}
+    scalar_floor_{pin->GetOrAddReal("hydro", "sfloor", std::sqrt(1024*float_min))},
+    floor_method_{pin->GetOrAddString("hydro", "floor_method", "floor")} {}
 
 //----------------------------------------------------------------------------------------
 //! \fn void EquationOfState::ConservedToPrimitive(AthenaArray<Real> &cons,
@@ -37,6 +39,7 @@ void EquationOfState::ConservedToPrimitive(
     AthenaArray<Real> &cons, const AthenaArray<Real> &prim_old, const FaceField &b,
     AthenaArray<Real> &prim, AthenaArray<Real> &bcc,
     Coordinates *pco, int il, int iu, int jl, int ju, int kl, int ku) {
+  unsigned int nbad_d = 0;
   for (int k=kl; k<=ku; ++k) {
     for (int j=jl; j<=ju; ++j) {
 #pragma omp simd
@@ -52,7 +55,7 @@ void EquationOfState::ConservedToPrimitive(
         Real& w_vz = prim(IVZ,k,j,i);
 
         // apply density floor, without changing momentum or energy
-        u_d = (u_d > density_floor_) ?  u_d : density_floor_;
+        nbad_d += CorrectBadCells(cons,k,j,i,il,iu,jl,ju,kl,ku,floor_method_);
         w_d = u_d;
 
         Real di = 1.0/u_d;
@@ -62,6 +65,9 @@ void EquationOfState::ConservedToPrimitive(
       }
     }
   }
+  if (nbad_d > 0)
+    std::cerr << "[Bad cell correction] rank " << Globals::my_rank
+      << ": " << nbad_d << " bad cells are corrected." << std::endl;
 
   return;
 }
@@ -140,4 +146,50 @@ void EquationOfState::ApplyPrimitiveConservedFloors(
   u_d = w_d;
 
   return;
+}
+
+//---------------------------------------------------------------------------------------
+//! \fn void EquationOfState::CorrectBadCells(AthenaArray<Real> &cons, int k, int j,
+//!           int i, int il, int ku, int jl, int ju, int kl, int ku, std::string method)
+//! \brief Apply density floor after integration at each stage
+
+int EquationOfState::CorrectBadCells(AthenaArray<Real> &cons, int k, int j, int i,
+    int il, int iu, int jl, int ju, int kl, int ku, std::string method) {
+  Real& u_d = cons(IDN,k,j,i);
+  Real u_d_old = cons(IDN,k,j,i);
+
+  if (method == "floor") {
+    // apply (cons) density floor, without changing momentum or energy
+    if (u_d <= density_floor_) {
+      u_d = density_floor_;
+      std::cerr << "[Bad cell correction] rank " << Globals::my_rank
+        << ": density floor applied. old=" << u_d_old << " new=" << u_d << std::endl;
+      return 1;
+    }
+  } else if (method == "neighbor") {
+    // apply neighbor averaging
+    // (SM) WARNING: The loop calling this function will not be vectorized
+    if (u_d <= density_floor_) {
+      Real u_d_avg = 0;
+      int koff[] = {1,-1,0,0,0,0};
+      int joff[] = {0,0,1,-1,0,0};
+      int ioff[] = {0,0,0,0,1,-1};
+      int n_neighbors = 0;
+      for (int idx=0; idx<6; ++idx) {
+        int kk = k + koff[idx];
+        int jj = j + joff[idx];
+        int ii = i + ioff[idx];
+        // skip indices outside the range
+        if ((ii<il) || (ii>iu) || (jj<jl) || (jj>ju) || (kk<kl) || (kk >ku))
+          continue;
+        n_neighbors++;
+        u_d_avg += cons(IDN,kk,jj,ii);
+      }
+      u_d = u_d_avg / (Real)n_neighbors;
+      std::cerr << "[Bad cell correction] rank " << Globals::my_rank
+        << ": density floor applied. old=" << u_d_old << " new=" << u_d << std::endl;
+      return 1;
+    }
+  }
+  return 0;
 }
