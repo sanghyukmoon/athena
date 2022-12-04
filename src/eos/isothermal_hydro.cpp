@@ -21,14 +21,25 @@
 #include "../parameter_input.hpp"
 #include "eos.hpp"
 
+int DensityFloor(AthenaArray<Real> &cons, int k, int j, int i, int il, int iu,
+                 int jl, int ju, int kl, int ku, Real floor);
+int NeighborAverage(AthenaArray<Real> &cons, int k, int j, int i, int il,
+                    int iu, int jl, int ju, int kl, int ku, Real floor);
+
 // EquationOfState constructor
 
 EquationOfState::EquationOfState(MeshBlock *pmb, ParameterInput *pin) :
     pmy_block_(pmb),
     iso_sound_speed_{pin->GetReal("hydro", "iso_sound_speed")},  // error if missing!
-    density_floor_{pin->GetOrAddReal("hydro", "dfloor", std::sqrt(1024*float_min) )},
+    density_floor_{pin->GetOrAddReal("hydro", "dfloor", std::sqrt(1024*float_min))},
     scalar_floor_{pin->GetOrAddReal("hydro", "sfloor", std::sqrt(1024*float_min))},
-    floor_method_{pin->GetOrAddString("hydro", "floor_method", "floor")} {}
+    floor_method_{pin->GetOrAddString("hydro", "floor_method", "floor")} {
+      if (floor_method_ == "floor") {
+        CorrectBadCells = &DensityFloor;
+      } else if (floor_method_ == "neighbor") {
+        CorrectBadCells = &NeighborAverage;
+      }
+    }
 
 //----------------------------------------------------------------------------------------
 //! \fn void EquationOfState::ConservedToPrimitive(AthenaArray<Real> &cons,
@@ -55,7 +66,7 @@ void EquationOfState::ConservedToPrimitive(
         Real& w_vz = prim(IVZ,k,j,i);
 
         // apply density floor, without changing momentum or energy
-        nbad_d += CorrectBadCells(cons,k,j,i,il,iu,jl,ju,kl,ku,floor_method_);
+        nbad_d += CorrectBadCells(cons,k,j,i,il,iu,jl,ju,kl,ku,density_floor_);
         w_d = u_d;
 
         Real di = 1.0/u_d;
@@ -148,48 +159,47 @@ void EquationOfState::ApplyPrimitiveConservedFloors(
   return;
 }
 
-//---------------------------------------------------------------------------------------
-//! \fn void EquationOfState::CorrectBadCells(AthenaArray<Real> &cons, int k, int j,
-//!           int i, int il, int ku, int jl, int ju, int kl, int ku, std::string method)
-//! \brief Apply density floor after integration at each stage
-
-int EquationOfState::CorrectBadCells(AthenaArray<Real> &cons, int k, int j, int i,
-    int il, int iu, int jl, int ju, int kl, int ku, std::string method) {
+int DensityFloor(AthenaArray<Real> &cons, int k, int j, int i,
+    int il, int iu, int jl, int ju, int kl, int ku, Real floor) {
   Real& u_d = cons(IDN,k,j,i);
   Real u_d_old = cons(IDN,k,j,i);
 
-  if (method == "floor") {
-    // apply (cons) density floor, without changing momentum or energy
-    if (u_d <= density_floor_) {
-      u_d = density_floor_;
-      std::cerr << "[Bad cell correction] rank " << Globals::my_rank
-        << ": density floor applied. old=" << u_d_old << " new=" << u_d << std::endl;
-      return 1;
+  if (u_d <= floor) {
+    u_d = floor;
+    std::cerr << "[Bad cell correction] rank " << Globals::my_rank
+      << ": density floor applied. old=" << u_d_old << " new=" << u_d << std::endl;
+    return 1;
+  }
+  return 0;
+}
+
+int NeighborAverage(AthenaArray<Real> &cons, int k, int j, int i,
+    int il, int iu, int jl, int ju, int kl, int ku, Real floor) {
+  Real& u_d = cons(IDN,k,j,i);
+  Real u_d_old = cons(IDN,k,j,i);
+
+  // apply neighbor averaging
+  // (SM) WARNING: The loop calling this function will not be vectorized
+  if (u_d <= floor) {
+    Real u_d_avg = 0;
+    int koff[] = {1,-1,0,0,0,0};
+    int joff[] = {0,0,1,-1,0,0};
+    int ioff[] = {0,0,0,0,1,-1};
+    int n_neighbors = 0;
+    for (int idx=0; idx<6; ++idx) {
+      int kk = k + koff[idx];
+      int jj = j + joff[idx];
+      int ii = i + ioff[idx];
+      // skip indices outside the range
+      if ((ii<il) || (ii>iu) || (jj<jl) || (jj>ju) || (kk<kl) || (kk >ku))
+        continue;
+      n_neighbors++;
+      u_d_avg += cons(IDN,kk,jj,ii);
     }
-  } else if (method == "neighbor") {
-    // apply neighbor averaging
-    // (SM) WARNING: The loop calling this function will not be vectorized
-    if (u_d <= density_floor_) {
-      Real u_d_avg = 0;
-      int koff[] = {1,-1,0,0,0,0};
-      int joff[] = {0,0,1,-1,0,0};
-      int ioff[] = {0,0,0,0,1,-1};
-      int n_neighbors = 0;
-      for (int idx=0; idx<6; ++idx) {
-        int kk = k + koff[idx];
-        int jj = j + joff[idx];
-        int ii = i + ioff[idx];
-        // skip indices outside the range
-        if ((ii<il) || (ii>iu) || (jj<jl) || (jj>ju) || (kk<kl) || (kk >ku))
-          continue;
-        n_neighbors++;
-        u_d_avg += cons(IDN,kk,jj,ii);
-      }
-      u_d = u_d_avg / (Real)n_neighbors;
-      std::cerr << "[Bad cell correction] rank " << Globals::my_rank
-        << ": density floor applied. old=" << u_d_old << " new=" << u_d << std::endl;
-      return 1;
-    }
+    u_d = u_d_avg / (Real)n_neighbors;
+    std::cerr << "[Bad cell correction] rank " << Globals::my_rank
+      << ": density floor applied. old=" << u_d_old << " new=" << u_d << std::endl;
+    return 1;
   }
   return 0;
 }

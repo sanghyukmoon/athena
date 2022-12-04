@@ -86,8 +86,7 @@ class EquationOfState {
       AthenaArray<Real> &prim, AthenaArray<Real> &cons, AthenaArray<Real> &bcc,
       int k, int j, int i);
   // TODO(SM) simd length?
-  int CorrectBadCells(AthenaArray<Real> &cons, int k, int j, int i,
-      int il, int iu, int jl, int ju, int kl, int ku, std::string method);
+  int (*CorrectBadCells)(AthenaArray<Real> &, int, int, int, int, int, int, int, int, int, Real);
 #if !MAGNETIC_FIELDS_ENABLED  // Newtonian hydro: Newtonian MHD defined as no-op
   Real FastMagnetosonicSpeed(const Real[], const Real) {return 0.0;}
 #else  // Newtonian MHD
