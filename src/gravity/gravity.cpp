@@ -39,7 +39,7 @@ Gravity::Gravity(MeshBlock *pmb, ParameterInput *pin) :
               (pmb->pmy_mesh->multilevel ? AthenaArray<Real>::DataStatus::allocated :
                AthenaArray<Real>::DataStatus::empty)),
     empty_flux{AthenaArray<Real>(), AthenaArray<Real>(), AthenaArray<Real>()},
-    four_pi_G(pmb->pmy_mesh->four_pi_G_),
+    four_pi_G(pmb->pmy_mesh->four_pi_G_), gconst(four_pi_G/4./PI),
     output_defect(false), fill_ghost(false), 
     gbvar(pmb, &phi, &coarse_phi, empty_flux, false) {
   if (four_pi_G == 0.0) {
