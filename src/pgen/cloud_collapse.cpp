@@ -22,6 +22,7 @@
 #include "../fft/athena_fft.hpp"
 #include "../field/field.hpp"
 #include "../globals.hpp"
+#include "../gravity/gravity.hpp"
 #include "../hydro/hydro.hpp"
 #include "../mesh/mesh.hpp"
 #include "../parameter_input.hpp"
@@ -30,14 +31,6 @@
 #ifdef OPENMP_PARALLEL
 #include <omp.h>
 #endif
-
-#if SELF_GRAVITY_ENABLED != 2
-#error "This problem generator requires Multigrid gravity solver."
-#endif
-
-// In the unit system where [L] = L_J, [M] = M_J, [T] = t_ff,
-// the gravitational constant becomes G = 3*PI/32.
-const Real gconst = 3.*PI/32.;
 
 int CheckLPThreshold(MeshBlock *pmb);
 int JeansCondition(MeshBlock *pmb);
@@ -55,7 +48,10 @@ void Mesh::InitUserMeshData(ParameterInput *pin) {
     return;
   }
 
-  SetFourPiG(4.*PI*gconst);
+  if (SELF_GRAVITY_ENABLED) {
+    Real gconst = pin->GetReal("problem","gconst");
+    SetGravitationalConstant(gconst);
+  }
 
   // turb_flag is initialzed in the Mesh constructor to 0 by default;
   // turb_flag = 1 for decaying turbulence
@@ -117,10 +113,11 @@ void Mesh::UserWorkInLoop() {
 }
 
 int CheckLPThreshold(MeshBlock* pmb) {
+  Real four_pi_G = pmb->pgrav->four_pi_G;
   Real dx = pmb->pcoord->dx1f(0); // assuming uniform cubic cells
   Real cs = pmb->peos->GetIsoSoundSpeed();
   // Larson-Penston threshold (Eqn. (7) of Kim & Ostriker 2017, ApJ, 846)
-  Real rhoLP = 8.86/PI*SQR(cs)/gconst/SQR(dx);
+  Real rhoLP = 8.86*SQR(cs)/four_pi_G/SQR(dx/2.);
   for (int k = pmb->ks; k<=pmb->ke; ++k) {
     for (int j = pmb->js; j<=pmb->je; ++j) {
       for (int i = pmb->is; i<=pmb->ie; ++i) {
