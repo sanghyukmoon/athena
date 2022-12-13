@@ -201,8 +201,10 @@ void MGGravityDriver::Solve(int stage) {
     Multigrid *pmg = *itr;
     Gravity *pgrav = pmg->pmy_block_->pgrav;
     pmg->RetrieveResult(pgrav->phi, 0, NGHOST);
-    if(pgrav->output_defect)
+    if(pgrav->output_defect) {
+      pmg->CalculateDefectBlock();
       pmg->RetrieveDefect(pgrav->def, 0, NGHOST);
+    }
   }
 
   if (vmg_[0]->pmy_block_->pgrav->fill_ghost)
