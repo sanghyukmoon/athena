@@ -1955,6 +1955,8 @@ TaskStatus TimeIntegratorTaskList::Prolongation(MeshBlock *pmb, int stage) {
                        + stage_wghts[(stage-1)].ebeta*pmb->pmy_mesh->dt;
     // Scaled coefficient for RHS time-advance within stage
     Real dt = (stage_wghts[(stage-1)].beta)*(pmb->pmy_mesh->dt);
+    if (Globals::my_rank==0)
+      std::cerr << "ncycle = " << pmb->pmy_mesh->ncycle << " [TimeIntegratorTaskList::Prolongation] Calling ProlongateBoundaries!" << std::endl;
     pbval->ProlongateBoundaries(t_end_stage, dt, pmb->pbval->bvars_main_int);
     return TaskStatus::success;
   }
@@ -1983,6 +1985,8 @@ TaskStatus TimeIntegratorTaskList::Primitives(MeshBlock *pmb, int stage) {
     // Newton-Raphson solver in GR EOS uses the following abscissae:
     // stage=1: W at t^n and
     // stage=2: W at t^{n+1/2} (VL2) or t^{n+1} (RK2)
+    if (Globals::my_rank==0)
+      std::cerr << "ncycle = " << pmb->pmy_mesh->ncycle << " [TimeIntegratorTaskList::Primitives] Calling ConservedToPrimitive!" << std::endl;
     pmb->peos->ConservedToPrimitive(ph->u, ph->w, pf->b,
                                     ph->w1, pf->bcc, pmb->pcoord,
                                     il, iu, jl, ju, kl, ku);

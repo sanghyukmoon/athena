@@ -209,6 +209,8 @@ void BoundaryValues::ProlongateBoundaries(const Real time, const Real dt,
     }
 
     // Step 2. Re-apply physical boundaries on the coarse boundary:
+    if (Globals::my_rank==0)
+      std::cerr << "ncycle = " << pmb->pmy_mesh->ncycle << " [BoundaryValues::ProlongateBoundaries] Calling ApplyPhysicalBoundariesOnCoarseLevel!" << std::endl;
     ApplyPhysicalBoundariesOnCoarseLevel(nb, time, dt, si, ei, sj, ej, sk, ek,
                                          bvars_subset);
 
@@ -385,6 +387,8 @@ void BoundaryValues::ApplyPhysicalBoundariesOnCoarseLevel(
   //!   no longer members of MeshRefinement that always exist (even if not allocated).
 
   // KGF: COUPLING OF QUANTITIES (must be manually specified)
+  if (Globals::my_rank==0)
+    std::cerr << "ncycle = " << pmb->pmy_mesh->ncycle << " [BoundaryValues::ApplyPhysicalBoundariesOnCoarseLevel] Calling ConservedToPrimitive!" << std::endl;
   pmb->peos->ConservedToPrimitive(ph->coarse_cons_, ph->coarse_prim_,
                                   pf->coarse_b_, ph->coarse_prim_,
                                   pf->coarse_bcc_, pmr->pcoarsec,

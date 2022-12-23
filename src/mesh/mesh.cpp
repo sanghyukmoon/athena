@@ -1541,6 +1541,8 @@ void Mesh::Initialize(int res_flag, ParameterInput *pin) {
       for (int i=0; i<nblocal; ++i) {
         pmb = my_blocks(i);
         pbval = pmb->pbval, ph = pmb->phydro, pf = pmb->pfield, ps = pmb->pscalars;
+        if (Globals::my_rank==0)
+          std::cerr << "ncycle = " << ncycle << " [Mesh::Initialize] Calling ProlongateBoundaries!" << std::endl;
         if (multilevel)
           pbval->ProlongateBoundaries(time, 0.0, pbval->bvars_main_int);
 
@@ -1557,6 +1559,8 @@ void Mesh::Initialize(int res_flag, ParameterInput *pin) {
           if (pbval->nblevel[0][1][1] != -1) kl -= NGHOST;
           if (pbval->nblevel[2][1][1] != -1) ku += NGHOST;
         }
+        if (Globals::my_rank==0)
+          std::cerr << "ncycle = " << ncycle << " [Mesh::Initialize] Calling ConservedToPrimitive!" << std::endl;
         pmb->peos->ConservedToPrimitive(ph->u, ph->w1, pf->b,
                                         ph->w, pf->bcc, pmb->pcoord,
                                         il, iu, jl, ju, kl, ku);

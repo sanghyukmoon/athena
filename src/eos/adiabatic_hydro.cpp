@@ -10,6 +10,7 @@
 
 // C++ headers
 #include <cmath>   // sqrt()
+#include <iomanip>    // std::setprecision()
 
 // Athena++ headers
 #include "../athena.hpp"
@@ -19,6 +20,8 @@
 #include "../mesh/mesh.hpp"
 #include "../parameter_input.hpp"
 #include "eos.hpp"
+
+const int cerr_precision = std::numeric_limits<Real>::max_digits10 - 1;
 
 // EquationOfState constructor
 
@@ -58,8 +61,16 @@ void EquationOfState::ConservedToPrimitive(
         Real& w_vz = prim(IVZ,k,j,i);
         Real& w_p  = prim(IPR,k,j,i);
 
+        if (u_d <= density_floor_) {
+          std::cerr << "[ConservedToPrimitive] rank " << Globals::my_rank
+                    << ": density floor applied. k=" << k << " j=" << j << " i=" << i
+                    << std::scientific << std::setprecision(cerr_precision)
+                    << " z=" << pco->x3v(k) << " y=" << pco->x2v(j) << " x=" << pco->x1v(i)
+                    << " old=" << u_d << std::endl;
+        }
+
         // apply density floor, without changing momentum or energy
-        u_d = (u_d > density_floor_) ?  u_d : density_floor_;
+//        u_d = (u_d > density_floor_) ?  u_d : density_floor_;
         w_d = u_d;
 
         Real di = 1.0/u_d;
