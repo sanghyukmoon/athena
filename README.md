@@ -70,3 +70,7 @@ In addition to above, please cite our [method paper](https://ui.adsabs.harvard.e
        adsurl = {https://ui.adsabs.harvard.edu/abs/2019ApJS..241...24M},
 }
 ```
+
+## Acknowledgement
+
+Due to repository changes, the current repository does not contain full commit histories. I thank **Hans Baehr** and **Jeong Hyeon Ahn** for correcting the errors in the gravitational source term in cylindrical coordinates.
