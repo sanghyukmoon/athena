@@ -225,6 +225,7 @@ class Mesh {
   friend class TurbulenceDriver;
   friend class MultigridDriver;
   friend class MGGravityDriver;
+  friend class JamesGravityDriver;
   friend class MGCRDiffusionDriver;
   friend class Gravity;
   friend class HydroDiffusion;
@@ -273,6 +274,7 @@ class Mesh {
   TurbulenceDriver *ptrbd;
   FFTGravityDriver *pfgrd;
   MGGravityDriver *pmgrd;
+  JamesGravityDriver *pjgrd;
   MGCRDiffusionDriver *pmcrd;
   Units *punit;
 
