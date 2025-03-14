@@ -1,24 +1,21 @@
-athena
+athena with James Poisson solver
 ======
-<!-- Jenkins Status Badge in Markdown (with view), unprotected, flat style -->
-<!-- In general, need to be on Princeton VPN, logged into Princeton CAS, with ViewStatus access to Jenkins instance to click on unprotected Build Status Badge, but server is configured to whitelist GitHub -->
-<!-- [![Jenkins Build Status](https://jenkins.princeton.edu/buildStatus/icon?job=athena/PrincetonUniversity_athena_jenkins_master)](https://jenkins.princeton.edu/job/athena/job/PrincetonUniversity_athena_jenkins_master/) -->
-[![Project Status: Active – The project has reached a stable, usable state and is being actively developed.](https://www.repostatus.org/badges/latest/active.svg)](https://www.repostatus.org/#active)
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.11660592.svg)](https://doi.org/10.5281/zenodo.11660592)
-[![codecov](https://codecov.io/gh/PrincetonUniversity/athena/branch/master/graph/badge.svg?token=ZzniY084kP)](https://codecov.io/gh/PrincetonUniversity/athena)
-[![License](https://img.shields.io/badge/License-BSD%203--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause)
-[![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.0-4baaaa.svg)](code_of_conduct.md)
 
-<!--[![Public GitHub  issues](https://img.shields.io/github/issues/PrincetonUniversity/athena-public-version.svg)](https://github.com/PrincetonUniversity/athena-public-version/issues)
-[![Public GitHub pull requests](https://img.shields.io/github/issues-pr/PrincetonUniversity/athena-public-version.svg)](https://github.com/PrincetonUniversity/athena-public-version/pulls) -->
+This version implements the James algorithm based on [Moon, Kim, & Ostriker (2019)](https://ui.adsabs.harvard.edu/abs/2019ApJS..241...24M/abstract) to enable the self-gravity with open boundary conditions in three-dimensional Cartesian and **cylindrical** coordinates.
 
-<p align="center">
-	  <img width="345" height="345" src="https://user-images.githubusercontent.com/1410981/115276281-759d8580-a108-11eb-9fc9-833480b97f95.png">
-</p>
+## Usage
+Simply configure the code with `--grav james` option.
+```
+> ./configure.py --prob poisson --grav james -fft -mpi
+> make clean
+> make
+```
+Note that `-mpi` is necessary even when using a single core.
 
-Athena++ radiation GRMHD code and adaptive mesh refinement (AMR) framework
+You need to write your own problem generator under the `pgen` directory. In your problem generator, make sure you set the gravitational constant by calling either `Mesh::SetGravitationalConstant` or `Mesh::SetFourPiG`. Examples can be found in, e.g., `pgen/poisson.cpp` and `pgen/disk.cpp`. 
 
-Please read [our contributing guidelines](./CONTRIBUTING.md) for details on how to participate.
+## Restrictions
+Because the current parallel FFT interface requires Mesh to be evenly divisible for both the block and pencil decompositions, the solver may not work for certain number of cells or MeshBlock decompositions. In addition, the James algorithm involves FFTs acting only on surfaces, which add complications on the possible decompositions. **The easiest way to meet all the requirements is to set the number of cells and MeshBlocks in each direction as powers of two.**
 
 ## Citation
 To cite Athena++ in your publication, please use the following BibTeX to refer to the code's [method paper](https://ui.adsabs.harvard.edu/abs/2020ApJS..249....4S/abstract):
@@ -51,5 +48,21 @@ Finally, we have minted DOIs for each released version of Athena++ on Zenodo. Th
   version      = {24.0},
   doi          = {10.5281/zenodo.11660592},
   url          = {https://doi.org/10.5281/zenodo.11660592}
+}
+```
+
+In addition to above, please cite our [method paper](https://ui.adsabs.harvard.edu/abs/2019ApJS..241...24M/abstract) for the cylindrical James algorithm  
+```
+@ARTICLE{Moon2019,
+       author = {{Moon}, Sanghyuk and {Kim}, Woong-Tae and {Ostriker}, Eve C.},
+        title = "{A Fast Poisson Solver of Second-order Accuracy for Isolated Systems in Three-dimensional Cartesian and Cylindrical Coordinates}",
+      journal = {The Astrophysical Journal Supplement Series},
+         year = 2019,
+        month = apr,
+       volume = {241},
+       number = {2},
+        pages = {24},
+          doi = {10.3847/1538-4365/ab09e9},
+       adsurl = {https://ui.adsabs.harvard.edu/abs/2019ApJS..241...24M},
 }
 ```
