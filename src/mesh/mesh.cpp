@@ -536,17 +536,6 @@ Mesh::Mesh(ParameterInput *pin, int mesh_test) :
     return;
   }
 
-
-  if (SELF_GRAVITY_ENABLED == 1) {
-    pfgrd = new FFTGravityDriver(this, pin);
-  } else if (SELF_GRAVITY_ENABLED == 2) {
-    // MGDriver must be initialzied before MeshBlocks
-    pmgrd = new MGGravityDriver(this, pin);
-  } else if (SELF_GRAVITY_ENABLED==3) {
-    pjgrd = new JamesGravityDriver(this, pin);
-  }
-
-
   if (CRDIFFUSION_ENABLED)
     pmcrd = new MGCRDiffusionDriver(this, pin);
 
@@ -565,6 +554,15 @@ Mesh::Mesh(ParameterInput *pin, int mesh_test) :
     my_blocks(i-gids_) = new MeshBlock(i, i-gids_, loclist[i], block_size, block_bcs,
                                        this, pin);
     my_blocks(i-gids_)->pbval->SearchAndSetNeighbors(tree, ranklist, nslist);
+  }
+
+  if (SELF_GRAVITY_ENABLED == 1) {
+    pfgrd = new FFTGravityDriver(this, pin);
+  } else if (SELF_GRAVITY_ENABLED == 2) {
+    // MGDriver must be initialzied before MeshBlocks
+    pmgrd = new MGGravityDriver(this, pin);
+  } else if (SELF_GRAVITY_ENABLED==3) {
+    pjgrd = new JamesGravityDriver(this, pin);
   }
 
   ResetLoadBalanceVariables();
@@ -876,15 +874,6 @@ Mesh::Mesh(ParameterInput *pin, IOWrapper& resfile, int mesh_test) :
     return;
   }
 
-  if (SELF_GRAVITY_ENABLED == 1) {
-    pfgrd = new FFTGravityDriver(this, pin);
-  } else if (SELF_GRAVITY_ENABLED == 2) {
-    // MGDriver must be initialzied before MeshBlocks
-    pmgrd = new MGGravityDriver(this, pin);
-  } else if (SELF_GRAVITY_ENABLED==3) {
-    pjgrd = new JamesGravityDriver(this, pin);
-  }
-
 
   if (CRDIFFUSION_ENABLED)
     pmcrd = new MGCRDiffusionDriver(this, pin);
@@ -946,6 +935,15 @@ Mesh::Mesh(ParameterInput *pin, IOWrapper& resfile, int mesh_test) :
             << std::endl;
         ATHENA_ERROR(msg);
     }
+  }
+
+  if (SELF_GRAVITY_ENABLED == 1) {
+    pfgrd = new FFTGravityDriver(this, pin);
+  } else if (SELF_GRAVITY_ENABLED == 2) {
+    // MGDriver must be initialzied before MeshBlocks
+    pmgrd = new MGGravityDriver(this, pin);
+  } else if (SELF_GRAVITY_ENABLED==3) {
+    pjgrd = new JamesGravityDriver(this, pin);
   }
 
   ResetLoadBalanceVariables();
