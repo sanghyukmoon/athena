@@ -25,7 +25,7 @@
 #include "../globals.hpp"
 #include "../mesh/mesh.hpp"
 #include "../mesh/meshblock_tree.hpp"
-#include "../task_list/fft_grav_task_list.hpp"
+#include "../task_list/grav_task_list.hpp"
 #include "gravity.hpp"
 
 #ifdef FFT
@@ -82,7 +82,7 @@ class JamesGravityDriver {
   Mesh *pmy_mesh_;
 
  private:
-  FFTGravitySolverTaskList *gtlist_;
+  GravityBoundaryTaskList *gtlist_;
 };
 
 

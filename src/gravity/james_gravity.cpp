@@ -96,7 +96,7 @@ JamesGravityDriver::JamesGravityDriver(Mesh *pm, ParameterInput *pin) {
          << std::endl;
     ATHENA_ERROR(msg);
   }
-  gtlist_ = new FFTGravitySolverTaskList(pin, pm);
+  gtlist_ = new GravityBoundaryTaskList(pin, pm);
 }
 
 // destructor

@@ -56,6 +56,7 @@ class Gravity;
 class MGGravityDriver;
 class FFTDriver;
 class FFTGravityDriver;
+class JamesGravityDriver;
 class TurbulenceDriver;
 class ChemRadiation;
 class OrbitalAdvection;
