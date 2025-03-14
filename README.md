@@ -1,6 +1,10 @@
 athena with James Poisson solver
 ======
 
+<p align="center">
+<img src="https://github.com/user-attachments/assets/d1c7fd6a-39a8-4d73-8596-d8d76374abc5" width="600">
+</p>
+
 This version implements the James algorithm based on [Moon, Kim, & Ostriker (2019)](https://ui.adsabs.harvard.edu/abs/2019ApJS..241...24M/abstract) to enable the self-gravity with open boundary conditions in three-dimensional Cartesian and **cylindrical** coordinates.
 
 ## Usage
