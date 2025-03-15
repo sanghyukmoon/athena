@@ -21,6 +21,10 @@ You need to write your own problem generator under the `pgen` directory. In your
 ## Restrictions
 Because the current parallel FFT interface requires Mesh to be evenly divisible for both the block and pencil decompositions, the solver may not work for certain number of cells or MeshBlock decompositions. In addition, the James algorithm involves FFTs acting only on surfaces, which add complications on the possible decompositions. **The easiest way to meet all the requirements is to set the number of cells and MeshBlocks in each direction as powers of two.**
 
+## Acknowledgement
+
+Due to repository changes, the current repository does not contain full commit histories. I thank **Hans Baehr** and **Jeong Hyeon Ahn** for correcting the errors in the gravitational source term in cylindrical coordinates.
+
 ## Citation
 To cite Athena++ in your publication, please use the following BibTeX to refer to the code's [method paper](https://ui.adsabs.harvard.edu/abs/2020ApJS..249....4S/abstract):
 ```
@@ -71,6 +75,4 @@ In addition to above, please cite our [method paper](https://ui.adsabs.harvard.e
 }
 ```
 
-## Acknowledgement
 
-Due to repository changes, the current repository does not contain full commit histories. I thank **Hans Baehr** and **Jeong Hyeon Ahn** for correcting the errors in the gravitational source term in cylindrical coordinates.
